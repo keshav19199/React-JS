@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Food Delivery App</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #f4f4f4;
+            text-align: center;
+        }
+
+        .container {
+            width: 350px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px gray;
+        }
+
+        input, select {
+            width: 90%;
+            padding: 8px;
+            margin: 8px;
+        }
+
+        button {
+            padding: 10px;
+            margin: 5px;
+            background: green;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: darkgreen;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>🍔 Food Delivery App</h1>
+
+<div class="container">
+
+    <h3>User Details</h3>
+    <input type="text" id="name" placeholder="Enter Name"><br>
+    <input type="text" id="mobile" placeholder="Mobile Number"><br>
+    <input type="text" id="email" placeholder="Email"><br>
+    <input type="text" id="pincode" placeholder="Pincode"><br>
+
+    <h3>Order Food</h3>
+
+    <select id="restaurant">
+        <option>Vaishali</option>
+        <option>Barbeque Nation</option>
+        <option>PK Biryani</option>
+    </select><br>
+
+    <select id="food">
+        <option>Paneer Butter Masala</option>
+        <option>Chicken Biryani</option>
+        <option>Veg Thali</option>
+    </select><br>
+
+    <input type="number" id="qty" placeholder="Quantity"><br>
+
+    <!-- 🛒 Cart Buttons -->
+    <button onclick="addToCart()">🛒 Add to Cart</button>
+    <button onclick="viewCart()">👀 View Cart</button>
+
+    <!-- 📦 Order Buttons -->
+    <button onclick="placeOrder()">🍔 Place Order</button>
+    <button onclick="loadOrders()">📦 View Orders</button>
+
+    <!-- Output Sections -->
+    <div id="cartList"></div>
+    <div id="ordersList"></div>
+
+</div>
+
+<script>
+
+// 🛒 Cart Array
+let cart = [];
+
+// ➕ Add to Cart
+function addToCart() {
+    let qty = document.getElementById("qty").value;
+
+    if(!qty || qty <= 0){
+        alert("Enter valid quantity");
+        return;
+    }
+
+    let item = {
+        restaurant: document.getElementById("restaurant").value,
+        foodItem: document.getElementById("food").value,
+        quantity: qty,
+        totalPrice: qty * 200
+    };
+
+    cart.push(item);
+    alert("Item added to cart 🛒");
+}
+
+// 👀 View Cart
+function viewCart() {
+    let output = "<h3>🛒 Cart</h3>";
+    let total = 0;
+
+    cart.forEach(c => {
+        total += c.totalPrice;
+        output += `<p>${c.foodItem} - Qty: ${c.quantity} - ₹${c.totalPrice}</p>`;
+    });
+
+    output += `<h4>Total: ₹${total}</h4>`;
+    document.getElementById("cartList").innerHTML = output;
+}
+
+// 🍔 Place Order (from cart)
+function placeOrder() {
+
+    let user = {
+        name: document.getElementById("name").value,
+        mobile: document.getElementById("mobile").value,
+        email: document.getElementById("email").value,
+        pincode: document.getElementById("pincode").value
+    };
+
+    // ✅ Validation
+    if(!user.name || !user.mobile || !user.email || !user.pincode){
+        alert("⚠️ Fill all details");
+        return;
+    }
+
+    if(cart.length === 0){
+        alert("🛒 Cart is empty");
+        return;
+    }
+
+    // 🔹 Save User
+    fetch("http://localhost:8080/api/user", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(user)
+    })
+    .then(res => res.text())
+    .then(() => {
+
+        // 🔹 Send each cart item as order
+        cart.forEach(order => {
+            fetch("http://localhost:8080/api/order", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(order)
+            });
+        });
+
+        alert("🎉 Order Placed Successfully!");
+        cart = []; // clear cart
+        document.getElementById("cartList").innerHTML = "";
+    });
+}
+
+// 📦 Load Orders
+function loadOrders() {
+    fetch("http://localhost:8080/api/orders")
+    .then(res => res.json())
+    .then(data => {
+        let output = "<h3>📦 Order History</h3>";
+
+        data.forEach(o => {
+            output += `
+            <div style="border:1px solid gray; margin:10px; padding:10px;">
+                <p><b>${o.restaurant}</b></p>
+                <p>${o.foodItem}</p>
+                <p>Qty: ${o.quantity}</p>
+                <p>₹${o.totalPrice}</p>
+            </div>`;
+        });
+
+        document.getElementById("ordersList").innerHTML = output;
+    });
+}
+
+</script>
+
+</body>
+</html>
